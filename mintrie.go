@@ -1,120 +1,184 @@
-package main
+package mintrie
 
 import (
-	"fmt"
 	"strings"
-	"os"
-	"bufio"
 )
 
-type Node struct {
-	Char       rune
-	Children   map[rune]*Node
-	Count      int
-	Parent     *Node
+type MinTrie struct {
+	roots map[rune]*node
 }
 
-func createNode(char rune) *Node {
-	return &Node{
-		Char: char,
-		Children: make(map[rune]*Node),
+type node struct {
+	char       rune
+	children   map[rune]*node
+	count      int
+	parent     *node
+	leaves     int
+}
+
+func NewMinTrie() MinTrie {
+	return MinTrie{
+		roots: make(map[rune]*node),
 	}
 }
 
-func print(roots map[rune]*Node) {
-	for _, val := range roots {
-		printNode(val)
+func (m *MinTrie)Exists(str string) bool {
+	n := m.find(str)
+	if n != nil && n.count > 0 {
+		return true
 	}
+	return false
 }
 
-func printNode(node *Node) {
-	//fmt.Printf("%q  ", node.Char)
-	for _, val := range node.Children {
-		if val.Count != 0 {
-			fmt.Printf("%d: %s\n", val.Count, getWord(val))
-		}
-		// fmt.Printf("%q  ", key)
-		printNode(val)
+func (m *MinTrie)SubExists(str string) bool {
+	n := m.find(str)
+	if n != nil {
+		return true
 	}
-
+	return false
 }
 
-func getWord(node *Node) string {
-	if node == nil {
-		return ""
-	}
-	return string(getWord(node.Parent)) + string(node.Char)
-}
-
-func getNodesMain(roots map[rune]*Node) []*Node {
-	nodes := make([]*Node, 0)
-	for _, val := range roots {
-		nodes = append(nodes, getNodes(val)...)
-	}
-	return nodes
-}
-
-func getFirstBranch(node *Node) *Node {
-	if node == nil {
+func (m *MinTrie)find(str string) *node {
+	if str == "" {
 		return nil
 	}
-	if len(node.Children) != 1 {
-		return node
-	}
-	for _, val := range node.Children {
-		return getFirstBranch(val)
-	}
-	return nil
-}
-
-func getFirstBranchNodes(roots map[rune]*Node) []*Node {
-	nodes := make([]*Node, 0)
-	for _, val := range roots {
-		tmp := getFirstBranch(val)
-		if tmp != nil {
-			nodes = append(nodes, tmp)
-		}
-	}
-	return nodes
-}
-
-func getNodes(node *Node) []*Node {
-	if node == nil {
+	reader := strings.NewReader(str)
+	char, _, err := reader.ReadRune()
+	if _, exists := m.roots[char]; !exists {
 		return nil
 	}
-	nodes := make([]*Node, 0)
-	for _, val := range node.Children {
-		nodes = append(nodes, val)
-		nodes = append(nodes, getNodes(val)...)
+
+	n := m.roots[char]
+	char, _, err = reader.ReadRune()
+	for err == nil {
+		if _, exists := n.children[char]; !exists {
+			return nil
+		} else {
+			n = n.children[char]
+		}
+		char, _, err = reader.ReadRune()
 	}
-	return nodes
+	return n
 }
 
-func addString(str string, roots map[rune]*Node) {
-	if len(str) == 0 {
+func (m *MinTrie)Insert(str string) {
+	if str == "" {
 		return
 	}
 	reader := strings.NewReader(str)
 	char, _, err := reader.ReadRune()
-	var currentNode *Node
-	if _, exists := roots[char]; !exists {
-		newNode := createNode(char)
-		roots[char] = newNode
+	var currentNode *node
+	if _, exists := m.roots[char]; !exists {
+		newNode := &node{
+			char:     char,
+			children: make(map[rune]*node),
+		}
+		m.roots[char] = newNode
 		currentNode = newNode
 	} else {
-		currentNode = roots[char]
+		currentNode = m.roots[char]
 	}
 	char, _, err = reader.ReadRune()
 	for err == nil {
-		if _, exists := currentNode.Children[char]; !exists {
-			newNode := createNode(char)
-			newNode.Parent = currentNode
-			currentNode.Children[char] = newNode
+		if _, exists := currentNode.children[char]; !exists {
+			newNode := &node{
+				char:   char,
+				parent: currentNode,
+				children: make(map[rune]*node),
+			}
+			currentNode.children[char] = newNode
 			currentNode = newNode
 		} else {
-			currentNode = currentNode.Children[char]
+			currentNode = currentNode.children[char]
 		}
 		char, _, err = reader.ReadRune()
 	}
-	currentNode.Count++
+	if currentNode.count == 0 {
+		incrementLeafCount(currentNode)
+	}
+	currentNode.count++
+}
+
+func incrementLeafCount(n *node) {
+	if n == nil {
+		return
+	}
+	n.leaves++
+	incrementLeafCount(n.parent)
+}
+
+func (m *MinTrie)GetLongestWord() string {
+	depth := 0
+	var n *node
+	for _, val := range m.roots {
+		if tmpDepth, tmpNode := getLongestWord(0, val); tmpDepth > depth {
+			depth = tmpDepth
+			n = tmpNode
+		}
+	}
+	return getWord(n)
+}
+
+func getLongestWord(depth int, n *node) (int, *node) {
+	if n == nil {
+		return depth, n
+	}
+	newDepth := depth + 1
+	newNode := n
+	for _, v := range n.children {
+		d, tn := getLongestWord(depth, v)
+		if d > newDepth {
+			newDepth = d
+			newNode = tn
+		}
+	}
+	return newDepth, newNode
+}
+
+func numWords(n *node) int {
+	if n == nil {
+		return 0
+	}
+
+	if len(n.children) == 0 {
+		return 0
+	}
+	words := 0
+	if n.count > 0 {
+		words++
+	}
+
+	for _, v := range n.children {
+		words += numWords(v)
+	}
+	return words
+}
+
+func getWord(n *node) string {
+	if n == nil {
+		return ""
+	}
+	return string(getWord(n.parent)) + string(n.char)
+}
+
+func Print(m MinTrie) string {
+	if len(m.roots) == 0 {
+		return ""
+	}
+	str := ""
+	for _, v := range m.roots {
+		str = fmt.Sprintf("%s%s\n", str, printNodes(v))
+	}
+	return str
+}
+
+func printNodes(n *node) string {
+	if n == nil {
+		return ""
+	}
+	str := fmt.Sprintf("%q : %d : %d\n", n.char, n.count, n.leaves)
+	for _, v := range n.children {
+		str = fmt.Sprintf("%s\n%s", str, printNodes(v))
+	}
+	return str
 }
