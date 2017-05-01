@@ -1,10 +1,11 @@
-package mintrie
+package trie
 
 import (
+	"fmt"
 	"strings"
 )
 
-type MinTrie struct {
+type Trie struct {
 	roots map[rune]*node
 }
 
@@ -16,13 +17,13 @@ type node struct {
 	leaves     int
 }
 
-func NewMinTrie() MinTrie {
-	return MinTrie{
+func NewTrie() Trie {
+	return Trie{
 		roots: make(map[rune]*node),
 	}
 }
 
-func (m *MinTrie)Exists(str string) bool {
+func (m *Trie)Exists(str string) bool {
 	n := m.find(str)
 	if n != nil && n.count > 0 {
 		return true
@@ -30,7 +31,7 @@ func (m *MinTrie)Exists(str string) bool {
 	return false
 }
 
-func (m *MinTrie)SubExists(str string) bool {
+func (m *Trie)SubExists(str string) bool {
 	n := m.find(str)
 	if n != nil {
 		return true
@@ -38,7 +39,7 @@ func (m *MinTrie)SubExists(str string) bool {
 	return false
 }
 
-func (m *MinTrie)find(str string) *node {
+func (m *Trie)find(str string) *node {
 	if str == "" {
 		return nil
 	}
@@ -61,7 +62,7 @@ func (m *MinTrie)find(str string) *node {
 	return n
 }
 
-func (m *MinTrie)Insert(str string) {
+func (m *Trie)Insert(str string) {
 	if str == "" {
 		return
 	}
@@ -107,7 +108,7 @@ func incrementLeafCount(n *node) {
 	incrementLeafCount(n.parent)
 }
 
-func (m *MinTrie)GetLongestWord() string {
+func (m *Trie)GetLongestWord() string {
 	depth := 0
 	var n *node
 	for _, val := range m.roots {
@@ -161,7 +162,7 @@ func getWord(n *node) string {
 	return string(getWord(n.parent)) + string(n.char)
 }
 
-func Print(m MinTrie) string {
+func Print(m Trie) string {
 	if len(m.roots) == 0 {
 		return ""
 	}

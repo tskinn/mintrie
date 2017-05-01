@@ -1,12 +1,11 @@
-package mintrie
+package trie
 
 import (
 	"testing"
-	"fmt"
 )
 
 func TestTrie(t *testing.T) {
-	trie := NewMinTrie()
+	trie := NewTrie()
 	trie.Insert("test")
 	trie.Insert("tes")
 	trie.Insert("tes")
