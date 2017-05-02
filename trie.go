@@ -17,12 +17,14 @@ type node struct {
 	leaves     int
 }
 
+// Creates an initialized Trie struct
 func NewTrie() Trie {
 	return Trie{
 		roots: make(map[rune]*node),
 	}
 }
 
+// Checks if the str string exists in the trie
 func (m *Trie)Exists(str string) bool {
 	n := m.find(str)
 	if n != nil && n.count > 0 {
@@ -31,6 +33,8 @@ func (m *Trie)Exists(str string) bool {
 	return false
 }
 
+// Checks if the str matches the begining of a string
+// that has been inserted into the trie
 func (m *Trie)SubExists(str string) bool {
 	n := m.find(str)
 	if n != nil {
@@ -62,6 +66,7 @@ func (m *Trie)find(str string) *node {
 	return n
 }
 
+// Insert inserts a string into the trie
 func (m *Trie)Insert(str string) {
 	if str == "" {
 		return
@@ -108,26 +113,26 @@ func incrementLeafCount(n *node) {
 	incrementLeafCount(n.parent)
 }
 
-func (m *Trie)GetLongestWord() string {
+func (m *Trie)GetLongestString() string {
 	depth := 0
 	var n *node
 	for _, val := range m.roots {
-		if tmpDepth, tmpNode := getLongestWord(0, val); tmpDepth > depth {
+		if tmpDepth, tmpNode := getLongestString(0, val); tmpDepth > depth {
 			depth = tmpDepth
 			n = tmpNode
 		}
 	}
-	return getWord(n)
+	return getString(n)
 }
 
-func getLongestWord(depth int, n *node) (int, *node) {
+func getLongestString(depth int, n *node) (int, *node) {
 	if n == nil {
 		return depth, n
 	}
 	newDepth := depth + 1
 	newNode := n
 	for _, v := range n.children {
-		d, tn := getLongestWord(depth, v)
+		d, tn := getLongestString(depth, v)
 		if d > newDepth {
 			newDepth = d
 			newNode = tn
@@ -136,7 +141,7 @@ func getLongestWord(depth int, n *node) (int, *node) {
 	return newDepth, newNode
 }
 
-func numWords(n *node) int {
+func numString(n *node) int {
 	if n == nil {
 		return 0
 	}
@@ -150,16 +155,16 @@ func numWords(n *node) int {
 	}
 
 	for _, v := range n.children {
-		words += numWords(v)
+		words += numString(v)
 	}
 	return words
 }
 
-func getWord(n *node) string {
+func getString(n *node) string {
 	if n == nil {
 		return ""
 	}
-	return string(getWord(n.parent)) + string(n.char)
+	return string(getString(n.parent)) + string(n.char)
 }
 
 func Print(m Trie) string {
@@ -177,9 +182,10 @@ func printNodes(n *node) string {
 	if n == nil {
 		return ""
 	}
-	str := fmt.Sprintf("%q : %d : %d\n", n.char, n.count, n.leaves)
+	str := fmt.Sprintf("%q : %d : %d", n.char, n.count, n.leaves)
 	for _, v := range n.children {
 		str = fmt.Sprintf("%s\n%s", str, printNodes(v))
 	}
 	return str
 }
+
