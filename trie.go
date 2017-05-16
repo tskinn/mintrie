@@ -84,8 +84,8 @@ func (t *Trie)Insert(str string) {
 			count: 1,
 			leaves: 1,
 		}
-		fmt.Println("Doesn't exist at all")
-		fmt.Printf("newNode:\n%s", t.roots[strRunes[0]])
+		// fmt.Println("Doesn't exist at all")
+		// fmt.Printf("newNode:\n%s", t.roots[strRunes[0]])
 		return
 	}
 	nNode, good := t.roots[strRunes[0]] // cNode = CurrentNode
@@ -126,14 +126,14 @@ func (t *Trie)Insert(str string) {
 				newParent.children[newChild.value[0]] = newChild
 				newParent.children[newNode.value[0]] = newNode
 				incrementLeafCount(newNode)
-				fmt.Println("differ in the middle of the value")
-				fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
+				// fmt.Println("differ in the middle of the value")
+				// fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
 				return
 			}
 		}
 		if len(strRunes) - index == len(cNode.value) { // they are the same if they made it this far and length is the same
 			// increment count cause the word already exists
-			fmt.Println("duplicate string")
+			// fmt.Println("duplicate string")
 			cNode.count += 1
 			return
 		} else if len(strRunes) - index < len(cNode.value) { // the str is a substring so we need to break up the node
@@ -149,13 +149,13 @@ func (t *Trie)Insert(str string) {
 			newParent.children = make(map[rune]*node)
 			newParent.children[newChild.value[0]] = newChild
 			newChild.parent = newParent
-			fmt.Println("matching substring")
-			fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
+			// fmt.Println("matching substring")
+			// fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
 			return
 		}
 		index += i
-		fmt.Println("Find next value in this thing", string(strRunes[index]))
-		printChildren(cNode)
+		// fmt.Println("Find next value in this thing", string(strRunes[index]))
+		//printChildren(cNode)
 		nNode, good = cNode.children[strRunes[index]]
 	}
 	// if we get here create new node
@@ -167,8 +167,8 @@ func (t *Trie)Insert(str string) {
 	}
 	cNode.children[newNode.value[0]] = newNode
 	incrementLeafCount(newNode)
-	fmt.Println("matches string but is longer")
-	fmt.Printf("cNode:\n%snewNode:\n%s\nnNode:\n%s", cNode, newNode, nNode)
+	// fmt.Println("matches string but is longer")
+	// fmt.Printf("cNode:\n%snewNode:\n%s\nnNode:\n%s", cNode, newNode, nNode)
 
 }
 
@@ -186,40 +186,19 @@ func incrementLeafCount(n *node) {
 	incrementLeafCount(n.parent)
 }
 
+func decrementLeafCount(n *node) {
+	if n == nil {
+		return
+	}
+	n.leaves--
+	decrementLeafCount(n.parent)
+}
+
 func printChildren(n *node) {
 	for key, nod := range n.children {
 		fmt.Printf("%s::::\n%s", string(key), nod)
 	}
 	fmt.Println("========================================")
-}
-
-// GetLongestString gets the longest string in the trie
-func (m *Trie)GetLongestString() string {
-	depth := 0
-	var n *node
-	for _, val := range m.roots {
-		if tmpDepth, tmpNode := getLongestString(0, val); tmpDepth > depth {
-			depth = tmpDepth
-			n = tmpNode
-		}
-	}
-	return getString(n)
-}
-
-func getLongestString(depth int, n *node) (int, *node) {
-	if n == nil {
-		return depth, n
-	}
-	newDepth := depth + 1
-	newNode := n
-	for _, v := range n.children {
-		d, tn := getLongestString(depth+1, v)
-		if d > newDepth {
-			newDepth = d
-			newNode = tn
-		}
-	}
-	return newDepth, newNode
 }
 
 func numString(n *node) int {
@@ -267,11 +246,44 @@ func getNodes(n *node) (nodes []*node) {
 	return nodes
 }
 
+func (t *Trie)GetLeaves() int {
+	return len(t.getLeaves())
+}
+
 func (t *Trie)getLeaves() (nodes []*node) {
 	for _, value := range t.roots {
 		nodes = append(nodes, getLeaves(value)...)
 	}
 	return nodes
+}
+
+func (t *Trie)DeleteWords(num int) {
+	for len(t.GetWords()) > num {
+		n := t.GetDeepestNode()
+		deleteWords(n)
+	}
+}
+
+func deleteWords(n *node) {
+	if n == nil {
+		return
+	}
+	n = n.parent
+	n.children = make(map[rune]*node)
+	n.value = append(n.value, '*')
+	n.leaves = 1
+	n.count = 1
+}
+
+func (t *Trie)GetWords() []string {
+	nads := t.getNodes()
+	strs := make([]string, 0)
+	for i := range nads {
+		if nads[i].count != 0 {
+			strs = append(strs, getString(nads[i]))
+		}
+	}
+	return strs
 }
 
 func getLeaves(n *node) (nodes []*node) {
@@ -296,13 +308,13 @@ func (t *Trie)GetDeepestNode() *node {
 	var nMax *node
 	for _, n := range t.roots {
 		max, nod := getDeepestNode(0, n)
-		//fmt.Printf("%d\n", max)
 		if max > iMax {
 			iMax = max
 			nMax = nod
 		}
 	}
-	fmt.Printf("iMax: %d\nnMax: %q\n", iMax, nMax)
+	// fmt.Printf("iMax: %d\nnMax: %q\n", iMax, nMax)
+	// fmt.Println(getString(nMax))
 	return nMax
 }
 
@@ -321,6 +333,44 @@ func getDeepestNode(depth int, current *node) (int, *node) {
 		}
 	}
 	return depth, nMax
+}
+
+
+func (t *Trie)GetLongestStringHello() string {
+	str, _ := t.getLongestString()
+	return str
+}
+
+func (t *Trie)getLongestString() (string, *node) {
+	if t == nil {
+		return "", nil
+	}
+	max := 0
+	var no *node
+	for _, root := range t.roots {
+		if tMax, tNode := getLongestString(0, root); tMax > max {
+			max = tMax
+			no = tNode
+		}
+	}
+	return getString(no), no
+}
+
+func getLongestString(length int, n *node) (int, *node) {
+	if n == nil {
+		return length, n
+	}
+	length += len(n.value)
+	max := length
+	no := n
+	for _, child := range n.children {
+		if tMax, tNode := getLongestString(length, child); tMax > max {
+			max = tMax
+			no = tNode
+		}
+	}
+
+	return max, no
 }
 
 // Print is a crappy attemt to print the trie
