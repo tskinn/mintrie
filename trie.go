@@ -92,7 +92,7 @@ func (t *Trie)Insert(str string) {
 	cNode := nNode
 	index := 0 // track parts covered by previous nodes
 	for good {
-		cNode := nNode
+		cNode = nNode
 		length := len(cNode.value)
 		if len(strRunes) < length {
 			length = len(strRunes)
@@ -103,12 +103,6 @@ func (t *Trie)Insert(str string) {
 				// do something drastic
 				// split nodes. current node into parent and child
 				// parent has child of new node of strRunes[i+index:] rest of string
-				// newChild := &node{
-				// 	children: cNode.children,
-				// 	value: copyRunes(cNode.value[i:]),
-				// 	leaves: cNode.leaves,
-				// 	count: cNode.count,
-				// }
 				newParent := &node{              // parent gets cNodes parent and the rest of the string up until
 					children: make(map[rune]*node),
 					parent: cNode.parent,
@@ -131,7 +125,6 @@ func (t *Trie)Insert(str string) {
 				newChild.value = copyRunes(newChild.value[i:])
 				newParent.children[newChild.value[0]] = newChild
 				newParent.children[newNode.value[0]] = newNode
-
 				incrementLeafCount(newNode)
 				fmt.Println("differ in the middle of the value")
 				fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
@@ -151,21 +144,11 @@ func (t *Trie)Insert(str string) {
 				leaves: 1,
 				count: cNode.count,
 			}
-			// newParent := &node{
-			// 	parent: cNode.parent,
-			// 	value: copyRunes(cNode.value[:i]),
-			// 	children: map[rune]*node{newChild.value[0]: newChild},
-			// }
 			newParent := cNode
 			newParent.value = copyRunes(newParent.value[:i])
 			newParent.children = make(map[rune]*node)
 			newParent.children[newChild.value[0]] = newChild
 			newChild.parent = newParent
-			// if cNode.parent == nil { // first in series
-			// 	t.roots[newParent.value[0]] = newParent
-			// } else {
-			// 	cNode.parent.children[newParent.value[0]] = newParent // replace the current node with the newParent node
-			// }
 			fmt.Println("matching substring")
 			fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
 			return
