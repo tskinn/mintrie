@@ -15,6 +15,11 @@ type node struct {
 	count      int
 	parent     *node
 	leaves     int
+	value      []rune
+}
+
+func (n *node)String() string {
+	return fmt.Sprintf("count: %d\nleaves: %d\nvalue: %s\n", n.count, n.leaves, string(n.value))
 }
 
 // Creates an initialized Trie struct
@@ -66,43 +71,128 @@ func (m *Trie)find(str string) *node {
 	return n
 }
 
-// Insert inserts a string into the trie
-func (m *Trie)Insert(str string) {
-	if str == "" {
+func (t *Trie)Insert(str string) {
+	if len(str) == 0 {
 		return
 	}
-	reader := strings.NewReader(str)
-	char, _, err := reader.ReadRune()
-	var currentNode *node
-	if _, exists := m.roots[char]; !exists {
-		newNode := &node{
-			char:     char,
+	strRunes := []rune(str)
+	if _, exists := t.roots[strRunes[0]]; !exists {
+		t.roots[strRunes[0]] = &node{
+			parent: nil,
 			children: make(map[rune]*node),
+			value: strRunes,
+			count: 1,
+			leaves: 1,
 		}
-		m.roots[char] = newNode
-		currentNode = newNode
-	} else {
-		currentNode = m.roots[char]
+		fmt.Println("Doesn't exist at all")
+		fmt.Printf("newNode:\n%s", t.roots[strRunes[0]])
+		return
 	}
-	char, _, err = reader.ReadRune()
-	for err == nil {
-		if _, exists := currentNode.children[char]; !exists {
-			newNode := &node{
-				char:   char,
-				parent: currentNode,
-				children: make(map[rune]*node),
+	nNode, good := t.roots[strRunes[0]] // cNode = CurrentNode
+	cNode := nNode
+	index := 0 // track parts covered by previous nodes
+	for good {
+		cNode := nNode
+		length := len(cNode.value)
+		if len(strRunes) < length {
+			length = len(strRunes)
+		}
+		i := 0
+		for ; i < length; i++ {
+			if cNode.value[i] != strRunes[i + index] {
+				// do something drastic
+				// split nodes. current node into parent and child
+				// parent has child of new node of strRunes[i+index:] rest of string
+				// newChild := &node{
+				// 	children: cNode.children,
+				// 	value: copyRunes(cNode.value[i:]),
+				// 	leaves: cNode.leaves,
+				// 	count: cNode.count,
+				// }
+				newParent := &node{              // parent gets cNodes parent and the rest of the string up until
+					children: make(map[rune]*node),
+					parent: cNode.parent,
+					value: copyRunes(cNode.value[:i]),
+					leaves: cNode.leaves,
+				}
+				newNode := &node{
+					children: make(map[rune]*node),
+					parent: newParent,
+					value: copyRunes(strRunes[i + index:]),
+					count: 1,
+				}
+				if cNode.parent == nil {
+					t.roots[newParent.value[0]] = newParent
+				} else {
+					cNode.parent.children[newParent.value[0]] = newParent
+				}
+				newChild := cNode
+				newChild.parent = newParent
+				newChild.value = copyRunes(newChild.value[i:])
+				newParent.children[newChild.value[0]] = newChild
+				newParent.children[newNode.value[0]] = newNode
+
+				incrementLeafCount(newNode)
+				fmt.Println("differ in the middle of the value")
+				fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
+				return
 			}
-			currentNode.children[char] = newNode
-			currentNode = newNode
-		} else {
-			currentNode = currentNode.children[char]
 		}
-		char, _, err = reader.ReadRune()
+		if len(strRunes) - index == len(cNode.value) { // they are the same if they made it this far and length is the same
+			// increment count cause the word already exists
+			fmt.Println("duplicate string")
+			cNode.count += 1
+			return
+		} else if len(strRunes) - index < len(cNode.value) { // the str is a substring so we need to break up the node
+			// split node
+			newChild := &node{
+				children: cNode.children,
+				value: copyRunes(cNode.value[i:]),
+				leaves: 1,
+				count: cNode.count,
+			}
+			// newParent := &node{
+			// 	parent: cNode.parent,
+			// 	value: copyRunes(cNode.value[:i]),
+			// 	children: map[rune]*node{newChild.value[0]: newChild},
+			// }
+			newParent := cNode
+			newParent.value = copyRunes(newParent.value[:i])
+			newParent.children = make(map[rune]*node)
+			newParent.children[newChild.value[0]] = newChild
+			newChild.parent = newParent
+			// if cNode.parent == nil { // first in series
+			// 	t.roots[newParent.value[0]] = newParent
+			// } else {
+			// 	cNode.parent.children[newParent.value[0]] = newParent // replace the current node with the newParent node
+			// }
+			fmt.Println("matching substring")
+			fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
+			return
+		}
+		index += i
+		fmt.Println("Find next value in this thing", string(strRunes[index]))
+		printChildren(cNode)
+		nNode, good = cNode.children[strRunes[index]]
 	}
-	if currentNode.count == 0 {
-		incrementLeafCount(currentNode)
+	// if we get here create new node
+	newNode := &node{
+		value: copyRunes(strRunes[index:]),
+		parent: cNode,
+		children: make(map[rune]*node),
+		count: 1,
 	}
-	currentNode.count++
+	cNode.children[newNode.value[0]] = newNode
+	incrementLeafCount(newNode)
+	fmt.Println("matches string but is longer")
+	fmt.Printf("cNode:\n%snewNode:\n%s\nnNode:\n%s", cNode, newNode, nNode)
+
+}
+
+func copyRunes(one []rune) []rune {
+	tmp := make([]rune, len(one))
+	copy(tmp, one)
+	return tmp
 }
 
 func incrementLeafCount(n *node) {
@@ -113,6 +203,14 @@ func incrementLeafCount(n *node) {
 	incrementLeafCount(n.parent)
 }
 
+func printChildren(n *node) {
+	for key, nod := range n.children {
+		fmt.Printf("%s::::\n%s", string(key), nod)
+	}
+	fmt.Println("========================================")
+}
+
+// GetLongestString gets the longest string in the trie
 func (m *Trie)GetLongestString() string {
 	depth := 0
 	var n *node
@@ -132,7 +230,7 @@ func getLongestString(depth int, n *node) (int, *node) {
 	newDepth := depth + 1
 	newNode := n
 	for _, v := range n.children {
-		d, tn := getLongestString(depth, v)
+		d, tn := getLongestString(depth+1, v)
 		if d > newDepth {
 			newDepth = d
 			newNode = tn
@@ -164,9 +262,85 @@ func getString(n *node) string {
 	if n == nil {
 		return ""
 	}
-	return string(getString(n.parent)) + string(n.char)
+	return string(getString(n.parent)) + string(n.value)
 }
 
+func (t *Trie)getNodes() (nodes []*node) {
+	for _, value := range t.roots {
+		nodes = append(nodes, getNodes(value)...)
+	}
+	return nodes
+}
+
+func getNodes(n *node) (nodes []*node) {
+	if n == nil {
+		return nodes
+	}
+	nodes = append(nodes, n)
+
+	for _, v := range n.children {
+		nodes = append(nodes, getNodes(v)...)
+	}
+	return nodes
+}
+
+func (t *Trie)getLeaves() (nodes []*node) {
+	for _, value := range t.roots {
+		nodes = append(nodes, getLeaves(value)...)
+	}
+	return nodes
+}
+
+func getLeaves(n *node) (nodes []*node) {
+	if n == nil {
+		return nodes
+	}
+	if n.count != 0 {
+		nodes = append(nodes, n)
+	}
+
+	for _, v := range n.children {
+		nodes = append(nodes, getNodes(v)...)
+	}
+	return nodes
+}
+
+func (t *Trie)GetDeepestNode() *node {
+	if t == nil {
+		return nil
+	}
+	iMax := 0
+	var nMax *node
+	for _, n := range t.roots {
+		max, nod := getDeepestNode(0, n)
+		//fmt.Printf("%d\n", max)
+		if max > iMax {
+			iMax = max
+			nMax = nod
+		}
+	}
+	fmt.Printf("iMax: %d\nnMax: %q\n", iMax, nMax)
+	return nMax
+}
+
+// getDeepestNode returns the depth of the node and the node itself
+func getDeepestNode(depth int, current *node) (int, *node) {
+	if current == nil || len(current.children) == 0 {
+		return depth, current
+	}
+	nMax := current
+	d := depth
+	for _, n := range current.children {
+		max, nod := getDeepestNode(d+1, n)
+		if max > depth {
+			depth = max
+			nMax = nod
+		}
+	}
+	return depth, nMax
+}
+
+// Print is a crappy attemt to print the trie
 func Print(m Trie) string {
 	if len(m.roots) == 0 {
 		return ""
@@ -178,11 +352,27 @@ func Print(m Trie) string {
 	return str
 }
 
+func (t *Trie)PrintStrings() {
+	nodes := t.getNodes()
+	for _, n := range nodes {
+		if n.count != 0 {
+			fmt.Println(getString(n))
+		}
+	}
+}
+
+func (t *Trie)PrintNodes() {
+	nodes := t.getNodes()
+	for _, n := range nodes {
+		fmt.Println(n)
+	}
+}
+
 func printNodes(n *node) string {
 	if n == nil {
 		return ""
 	}
-	str := fmt.Sprintf("%q : %d : %d", n.char, n.count, n.leaves)
+	str := fmt.Sprintf("%s : %d : %d", string(n.value), n.count, n.leaves)
 	for _, v := range n.children {
 		str = fmt.Sprintf("%s\n%s", str, printNodes(v))
 	}
