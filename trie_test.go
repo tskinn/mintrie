@@ -16,12 +16,12 @@ func TestTrie(t *testing.T) {
 	trie.Insert("tests")
 	str := Print(trie)
 	if !trie.Exists("test") {
-		t.Fatalf("%s", str)
+		t.Fatalf("test Exists\n%s", str)
 	}
-	if !trie.SubExists("tes") {
-		t.Fatalf("%s", str)
+	if !trie.SubExists("te") {
+		t.Fatalf("tes SubExists\n%s", str)
 	}
-	if trie.Exists("tests") {
+	if trie.Exists("testsi") {
 		t.Logf("%s", str)
 		t.Fatal("shouldn't exist")
 	}

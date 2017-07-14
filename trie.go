@@ -33,7 +33,7 @@ func NewTrie() Trie {
 func (m *Trie)Exists(str string) bool {
 	n := m.find(str)
 	if n != nil && n.count > 0 {
-		return true
+		return getString(n) == str
 	}
 	return false
 }
@@ -43,7 +43,7 @@ func (m *Trie)Exists(str string) bool {
 func (m *Trie)SubExists(str string) bool {
 	n := m.find(str)
 	if n != nil {
-		return true
+		return strings.HasPrefix(getString(n), str)
 	}
 	return false
 }
@@ -52,23 +52,26 @@ func (m *Trie)find(str string) *node {
 	if str == "" {
 		return nil
 	}
-	reader := strings.NewReader(str)
-	char, _, err := reader.ReadRune()
-	if _, exists := m.roots[char]; !exists {
+	index := 0
+	runeString := []rune(str)
+	if _, exists := m.roots[runeString[index]]; !exists {
 		return nil
 	}
 
-	n := m.roots[char]
-	char, _, err = reader.ReadRune()
-	for err == nil {
-		if _, exists := n.children[char]; !exists {
-			return nil
+	currentNode := m.roots[runeString[index]]
+	currentNodeValueIndex := 0
+	for ;index < len(runeString); index++ {
+		if currentNodeValueIndex < len(currentNode.value) && currentNode.value[currentNodeValueIndex] == runeString[index] {
+			currentNodeValueIndex++
+			continue
+		} else if _, exists := currentNode.children[runeString[index]]; exists { // check the children
+			currentNode = currentNode.children[runeString[index]]
+			currentNodeValueIndex = 0
 		} else {
-			n = n.children[char]
+			return nil
 		}
-		char, _, err = reader.ReadRune()
 	}
-	return n
+	return currentNode
 }
 
 func (t *Trie)Insert(str string) {
