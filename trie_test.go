@@ -6,10 +6,14 @@ import (
 
 func TestTrie(t *testing.T) {
 	trie := NewTrie()
+	trie.PrintStrings()
 	trie.Insert("tests")
+	trie.PrintStrings()
 	trie.Insert("test")
+	trie.PrintStrings()
 	trie.Insert("tes")
-	t.Fatal(trie.GetWords())
+	trie.PrintStrings()
+
 	trie.Insert("hellllooooo")
 	trie.Insert("helllooooo")
 	trie.Insert("hellooooo")
