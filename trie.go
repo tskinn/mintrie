@@ -7,19 +7,18 @@ import (
 
 type Trie struct {
 	roots map[rune]*node
+	UniqueWords int
 }
 
+// Note that the value attribute
 type node struct {
 	char       rune
 	children   map[rune]*node
 	count      int
 	parent     *node
 	leaves     int
-	value      []rune
-}
-
-func (n *node)String() string {
-	return fmt.Sprintf("count: %d\nleaves: %d\nvalue: %s\n", n.count, n.leaves, string(n.value))
+	value      []rune // value includes the rune that was used to find its node
+	                  // example: if value = "hello" then parent.children["h"] = current node
 }
 
 // Creates an initialized Trie struct
@@ -31,9 +30,9 @@ func NewTrie() Trie {
 
 // Checks if the str string exists in the trie
 func (m *Trie)Exists(str string) bool {
-	n := m.find(str)
+	n, _, _ := m.find(str) // TODO look into using returned indices instead of comparing strings
 	if n != nil && n.count > 0 {
-		return getString(n) == str
+		return n.GetString() == str
 	}
 	return false
 }
@@ -41,21 +40,21 @@ func (m *Trie)Exists(str string) bool {
 // Checks if the str matches the begining of a string
 // that has been inserted into the trie
 func (m *Trie)SubExists(str string) bool {
-	n := m.find(str)
+	n, _, _ := m.find(str) // TODO look into using indices returned instead of getstring for subexists
 	if n != nil {
-		return strings.HasPrefix(getString(n), str)
+		return strings.HasPrefix(n.GetString(), str)
 	}
 	return false
 }
 
-func (m *Trie)find(str string) *node {
+func (m *Trie)find(str string) (*node, int, int) {
 	if str == "" {
-		return nil
+		return nil, 0, 0
 	}
 	index := 0
 	runeString := []rune(str)
 	if _, exists := m.roots[runeString[index]]; !exists {
-		return nil
+		return nil, 0, 0
 	}
 
 	currentNode := m.roots[runeString[index]]
@@ -68,11 +67,24 @@ func (m *Trie)find(str string) *node {
 			currentNode = currentNode.children[runeString[index]]
 			currentNodeValueIndex = 0
 		} else {
-			return nil
+			break
 		}
 	}
-	return currentNode
+	return currentNode, index, currentNodeValueIndex
 }
+
+// func (t *Trie)Insert(str string) err {
+// 	if len(str) == 0 {
+// 		return nil
+// 	}
+// 	strRunes := []rune(str)
+// 	n, index := t.find(str)
+// 	if n == nil { // no node exists so create a new root
+		
+// 	} else { // already exists or need to add or need to split
+
+// 	}
+// }
 
 func (t *Trie)Insert(str string) {
 	if len(str) == 0 {
@@ -89,6 +101,7 @@ func (t *Trie)Insert(str string) {
 		}
 		// fmt.Println("Doesn't exist at all")
 		// fmt.Printf("newNode:\n%s", t.roots[strRunes[0]])
+		t.UniqueWords++
 		return
 	}
 	nNode, good := t.roots[strRunes[0]] // cNode = CurrentNode
@@ -101,7 +114,7 @@ func (t *Trie)Insert(str string) {
 			length = len(strRunes)
 		}
 		i := 0
-		for ; i < length; i++ {
+		for ; i < length && i+index < len(strRunes); i++ {
 			if cNode.value[i] != strRunes[i + index] {
 				// do something drastic
 				// split nodes. current node into parent and child
@@ -128,9 +141,10 @@ func (t *Trie)Insert(str string) {
 				newChild.value = copyRunes(newChild.value[i:])
 				newParent.children[newChild.value[0]] = newChild
 				newParent.children[newNode.value[0]] = newNode
-				incrementLeafCount(newNode)
+				newNode.incrementLeafCount(1)
 				// fmt.Println("differ in the middle of the value")
 				// fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
+				t.UniqueWords++
 				return
 			}
 		}
@@ -154,11 +168,10 @@ func (t *Trie)Insert(str string) {
 			newChild.parent = newParent
 			// fmt.Println("matching substring")
 			// fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
+			t.UniqueWords++
 			return
 		}
 		index += i
-		// fmt.Println("Find next value in this thing", string(strRunes[index]))
-		//printChildren(cNode)
 		nNode, good = cNode.children[strRunes[index]]
 	}
 	// if we get here create new node
@@ -169,10 +182,10 @@ func (t *Trie)Insert(str string) {
 		count: 1,
 	}
 	cNode.children[newNode.value[0]] = newNode
-	incrementLeafCount(newNode)
+	t.UniqueWords++
+	newNode.incrementLeafCount(1)
 	// fmt.Println("matches string but is longer")
 	// fmt.Printf("cNode:\n%snewNode:\n%s\nnNode:\n%s", cNode, newNode, nNode)
-
 }
 
 func copyRunes(one []rune) []rune {
@@ -181,73 +194,14 @@ func copyRunes(one []rune) []rune {
 	return tmp
 }
 
-func incrementLeafCount(n *node) {
-	if n == nil {
-		return
-	}
-	n.leaves++
-	incrementLeafCount(n.parent)
-}
-
-func decrementLeafCount(n *node) {
-	if n == nil {
-		return
-	}
-	n.leaves--
-	decrementLeafCount(n.parent)
-}
-
-func printChildren(n *node) {
-	for key, nod := range n.children {
-		fmt.Printf("%s::::\n%s", string(key), nod)
-	}
-	fmt.Println("========================================")
-}
-
-func numString(n *node) int {
-	if n == nil {
-		return 0
-	}
-
-	if len(n.children) == 0 {
-		return 0
-	}
-	words := 0
-	if n.count > 0 {
-		words++
-	}
-
-	for _, v := range n.children {
-		words += numString(v)
-	}
-	return words
-}
-
-func getString(n *node) string {
-	if n == nil {
-		return ""
-	}
-	return string(getString(n.parent)) + string(n.value)
-}
-
+// getNodes collects all nodes in trie into a slice
 func (t *Trie)getNodes() (nodes []*node) {
 	for _, value := range t.roots {
-		nodes = append(nodes, getNodes(value)...)
+		nodes = append(nodes, value.getDescendents()...)
 	}
 	return nodes
 }
 
-func getNodes(n *node) (nodes []*node) {
-	if n == nil {
-		return nodes
-	}
-	nodes = append(nodes, n)
-
-	for _, v := range n.children {
-		nodes = append(nodes, getNodes(v)...)
-	}
-	return nodes
-}
 
 func (t *Trie)GetLeaves() int {
 	return len(t.getLeaves())
@@ -260,22 +214,12 @@ func (t *Trie)getLeaves() (nodes []*node) {
 	return nodes
 }
 
+// DeleteWords will delete
 func (t *Trie)DeleteWords(num int) {
 	for len(t.GetWords()) > num {
 		n := t.GetDeepestNode()
-		deleteWords(n)
+		n.deleteDescendents('*')
 	}
-}
-
-func deleteWords(n *node) {
-	if n == nil {
-		return
-	}
-	n = n.parent
-	n.children = make(map[rune]*node)
-	n.value = append(n.value, '*')
-	n.leaves = 1
-	n.count = 1
 }
 
 func (t *Trie)GetWords() []string {
@@ -283,24 +227,10 @@ func (t *Trie)GetWords() []string {
 	strs := make([]string, 0)
 	for i := range nads {
 		if nads[i].count != 0 {
-			strs = append(strs, getString(nads[i]))
+			strs = append(strs, nads[i].GetString())
 		}
 	}
 	return strs
-}
-
-func getLeaves(n *node) (nodes []*node) {
-	if n == nil {
-		return nodes
-	}
-	if n.count != 0 {
-		nodes = append(nodes, n)
-	}
-
-	for _, v := range n.children {
-		nodes = append(nodes, getNodes(v)...)
-	}
-	return nodes
 }
 
 func (t *Trie)GetDeepestNode() *node {
@@ -321,30 +251,12 @@ func (t *Trie)GetDeepestNode() *node {
 	return nMax
 }
 
-// getDeepestNode returns the depth of the node and the node itself
-func getDeepestNode(depth int, current *node) (int, *node) {
-	if current == nil || len(current.children) == 0 {
-		return depth, current
-	}
-	nMax := current
-	d := depth
-	for _, n := range current.children {
-		max, nod := getDeepestNode(d+1, n)
-		if max > depth {
-			depth = max
-			nMax = nod
-		}
-	}
-	return depth, nMax
-}
-
-
-func (t *Trie)GetLongestStringHello() string {
-	str, _ := t.getLongestString()
+func (t *Trie)GetLongestString() string {
+	str, _ := t.getLongest()
 	return str
 }
 
-func (t *Trie)getLongestString() (string, *node) {
+func (t *Trie)getLongest() (string, *node) {
 	if t == nil {
 		return "", nil
 	}
@@ -356,24 +268,7 @@ func (t *Trie)getLongestString() (string, *node) {
 			no = tNode
 		}
 	}
-	return getString(no), no
-}
-
-func getLongestString(length int, n *node) (int, *node) {
-	if n == nil {
-		return length, n
-	}
-	length += len(n.value)
-	max := length
-	no := n
-	for _, child := range n.children {
-		if tMax, tNode := getLongestString(length, child); tMax > max {
-			max = tMax
-			no = tNode
-		}
-	}
-
-	return max, no
+	return no.GetString(), no
 }
 
 // Print is a crappy attemt to print the trie
@@ -392,7 +287,7 @@ func (t *Trie)PrintStrings() {
 	nodes := t.getNodes()
 	for _, n := range nodes {
 		if n.count != 0 {
-			fmt.Println(getString(n))
+			fmt.Println(n.GetString())
 		}
 	}
 }
@@ -402,16 +297,5 @@ func (t *Trie)PrintNodes() {
 	for _, n := range nodes {
 		fmt.Println(n)
 	}
-}
-
-func printNodes(n *node) string {
-	if n == nil {
-		return ""
-	}
-	str := fmt.Sprintf("%s : %d : %d", string(n.value), n.count, n.leaves)
-	for _, v := range n.children {
-		str = fmt.Sprintf("%s\n%s", str, printNodes(v))
-	}
-	return str
 }
 
