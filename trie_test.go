@@ -6,48 +6,40 @@ import (
 
 func TestTrie(t *testing.T) {
 	trie := NewTrie()
-	trie.PrintStrings()
-	trie.Insert("tests")
-	trie.PrintStrings()
-	trie.Insert("test")
-	trie.PrintStrings()
-	trie.Insert("tes")
-	trie.PrintStrings()
-
-	trie.Insert("hellllooooo")
-	trie.Insert("helllooooo")
-	trie.Insert("hellooooo")
-	trie.Insert("helllllooo")
-	trie.Insert("hellllloo")
-	trie.Insert("helllllo")
-	trie.PrintNodes()
-	str := Print(trie)
-	if !trie.Exists("test") {
-		t.Fatalf("test Exists\n%s", str)
+	words := []string{
+		"test",
+		"tests",
+		"tes",
+		"teseract",
+		"testimony",
+		"teleport",
+		"telmarine",
+		"telephone",
+		"telepathy",
+		"telepathic",
+		"testify",
+		"testament",
+		"testi",
 	}
-	if !trie.SubExists("te") {
-		t.Fatalf("tes SubExists\n%s", str)
+	for i := range words {
+		trie.Insert(words[i])
 	}
-	if !trie.Exists("tests") {
-		t.Fatalf("tests exists\n%s", str)
+	for i := range words {
+		if !trie.Exists(words[i]) {
+			t.Fatalf("'%s' should exist in the trie\nWords:\n%s", words[i], trie.GetWords())
+		}
 	}
 	if trie.Exists("testsi") {
-		t.Fatal("testsi shouldn't exist")
+		t.Fatal("'testsi' shouldn't exist")
 	}
 	if trie.SubExists("ted") {
-		t.Fatal("shouldn't sub exist")
+		t.Fatal("'ted' shouldn't sub exist")
 	}
 	if trie.Exists("hello") {
-		t.Fatal("hello shouldn't exist")
+		t.Fatal("'hello' shouldn't exist")
 	}
-	longest := trie.GetLongestString()
-	if longest != "helllllooooo" {
-		t.Fatal("helllllooooo should be longest string")
+	trie.DeleteWords(9, '*')
+	if len(trie.GetWords()) > 9 {
+		t.Fatal("DeleteWords() failed. Number of Words:", len(trie.GetWords()))
 	}
-	deepest := trie.GetDeepestNode()
-	if deepest.GetString() != "tests" {
-		t.Fatal("'tests' should be the deepest node string but got", deepest.GetString())
-	}
-	trie.DeleteWords(3)
-	t.Fatal(trie.GetWords())
 }

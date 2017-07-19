@@ -6,11 +6,11 @@ import (
 
 // getDescendents gets every node descendent of n
 // recursively collects all children nodes into one slice
-func (n *node)getDescendents() (nodes []*node) {
+func (n *node)getDescendents() []*node {
+	nodes := []*node{n}
 	if n == nil {
 		return nodes
 	}
-	nodes = append(nodes, n)
 
 	for _, v := range n.children {
 		nodes = append(nodes, v.getDescendents()...)
@@ -84,7 +84,8 @@ func (n *node)deleteDescendents(replacement rune) {
 	n.count = 1
 }
 
-func getLeaves(n *node) (nodes []*node) {
+func (n *node)getLeaves() []*node {
+	nodes := make([]*node, 0)
 	if n == nil {
 		return nodes
 	}
@@ -100,14 +101,14 @@ func getLeaves(n *node) (nodes []*node) {
 
 
 // getDeepestNode returns the depth of the node and the node itself
-func getDeepestNode(depth int, current *node) (int, *node) {
+func (current *node)getDeepestNode(depth int) (int, *node) {
 	if current == nil || len(current.children) == 0 {
 		return depth, current
 	}
 	nMax := current
 	d := depth
 	for _, n := range current.children {
-		max, nod := getDeepestNode(d+1, n)
+		max, nod := n.getDeepestNode(d+1)
 		if max > depth {
 			depth = max
 			nMax = nod
@@ -134,13 +135,13 @@ func getLongestString(length int, n *node) (int, *node) {
 	return max, no
 }
 
-func printNodes(n *node) string {
+func (n *node)printNodes() string {
 	if n == nil {
 		return ""
 	}
 	str := fmt.Sprintf("%s : %d : %d", string(n.value), n.count, n.leaves)
 	for _, v := range n.children {
-		str = fmt.Sprintf("%s\n%s", str, printNodes(v))
+		str = fmt.Sprintf("%s\n%s", str, v.printNodes())
 	}
 	return str
 }

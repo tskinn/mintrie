@@ -59,18 +59,18 @@ func (m *Trie)find(str string) (*node, int, int) {
 	currentNode := m.roots[runeString[index]]
 	currentNodeValueIndex := 0
 	for ;index < len(runeString); index++ {
-		if currentNodeValueIndex == len(currentNode.value) { // if we've it this far then we have matched all runes in the current node
-			next, exists := currentNode.children[runeString[index]]
-			if exists { // continue search in this new node
+		if currentNodeValueIndex >= len(currentNode.value) {        // runeString is longer than currentNode.value
+			next, exists := currentNode.children[runeString[index]]  // so try to continue search in children
+			if exists {
 				currentNode = next
-				currentNodeValueIndex = 0
-			} else { // search is over. we lost
-				break // note: currentNodeValueIndex == len(currentNode.value)
+				currentNodeValueIndex = 1
+			} else {
+				break
 			}
-		} else if currentNode.value[currentNodeValueIndex] == runeString[index] { // continue in the search!
-			currentNodeValueIndex++
-		} else { // runes didn't match so return the current state of the search
+		} else if runeString[index] != currentNode.value[currentNodeValueIndex] {
 			break
+		} else {
+			currentNodeValueIndex++
 		}
 	}
 	// Possible outcomes:
@@ -87,7 +87,6 @@ func (t *Trie)Insert(str string) error {
 		return nil
 	}
 	strRunes := []rune(str)
-	fmt.Println("Inserting ", str)
 	n, strRunesIndex, nodeValueIndex := t.find(str)
 	if n == nil { // no node exists so create a new root
 		t.roots[strRunes[0]] = &node{
@@ -99,145 +98,72 @@ func (t *Trie)Insert(str string) error {
 		}
 		t.UniqueWords++
 		return nil
-	} else { // already exists or need to add or need to split
-		fmt.Println(len(strRunes), strRunesIndex, len(n.value), nodeValueIndex)
-		fmt.Println(string(n.value))
-		if strRunesIndex >= len(strRunes) { // match or submatch?
-			if nodeValueIndex < len(n.value) { // submatch. split current node into parent/child
-				fmt.Println("splitting node into parent child")
-				fmt.Println("n value:    ", string(n.value))
-				newParent := &node{
-					children: make(map[rune]*node),
-					parent: n.parent,
-					value: copyRunes(n.value[:nodeValueIndex]),
-				}
-				n.parent = newParent
-				n.value = copyRunes(n.value[nodeValueIndex:])
-				
-				t.UniqueWords++
-				fmt.Println("newNode value:    ", string(n.value))
-				fmt.Println("parentNode value: ", string(newParent.value))
-				return nil
-			} else { // matches the word... I think
-				n.count++
-			}
-		} else if nodeValueIndex >= len(n.value) { // need to add a node
-			fmt.Println("adding new node")
-			newNode := &node{
-				value: copyRunes(strRunes[strRunesIndex:]),
-				parent: n,
-				children: make(map[rune]*node),
-				count: 1,
-			}
-			n.children[newNode.value[0]] = newNode
-			t.UniqueWords++
-			newNode.incrementLeafCount(1)
+	} else if nodeValueIndex == len(n.value) && strRunesIndex == len(strRunes) {
+		n.count++ // it matches a node already so just increase the count
+	} else if nodeValueIndex >= len(n.value) && strRunesIndex < len(strRunes) { // Add new node
+		newNode := &node{
+			value: copyRunes(strRunes[strRunesIndex:]),
+			parent: n,
+			children: make(map[rune]*node),
+			count: 1,
 		}
+		n.children[newNode.value[0]] = newNode
+		t.UniqueWords++
+		newNode.incrementLeafCount(1)
+	}  else if strRunesIndex < len(strRunes) && nodeValueIndex < len(n.value) { // Sub. split node into three
+		newParent := &node{
+			children: make(map[rune]*node),
+			parent: n.parent,
+			value: copyRunes(n.value[:nodeValueIndex]),
+			leaves: n.leaves,
+		}
+		newSon := &node{
+			children: make(map[rune]*node),
+			parent: newParent,
+			value: copyRunes(strRunes[strRunesIndex:]),
+			count: 1,
+		}
+		newDaughter := &node{
+			children: make(map[rune]*node),
+			parent: newParent,
+			value: copyRunes(n.value[nodeValueIndex:]),
+			count: n.count,
+		}
+		if n.parent != nil {
+			n.parent.children[newParent.value[0]] = newParent
+		} else {
+			t.roots[newParent.value[0]] = newParent
+		}
+		newDaughter.children = n.children
+		newParent.children[newDaughter.value[0]] = newDaughter
+		newParent.children[newSon.value[0]] = newSon
+		newSon.incrementLeafCount(1)
+		t.UniqueWords++
+	} else { // SubMatch. split current node into two: parent and child
+		newParent := &node{
+			children: make(map[rune]*node),
+			parent: n.parent,
+			value: copyRunes(n.value[:nodeValueIndex]),
+			leaves: n.leaves,
+			count: 1,
+		}
+		newChild := &node{
+			children: n.children,
+			parent: newParent,
+			count: n.count,
+			leaves: n.leaves,
+			value: copyRunes(n.value[nodeValueIndex:]),
+		}
+		if n.parent == nil {
+			t.roots[newParent.value[0]] = newParent
+		}
+		newParent.children[newChild.value[0]] = newChild
+		newParent.incrementLeafCount(1)
+		t.UniqueWords++
+		return nil
 	}
 	return nil
 }
-
-// func (t *Trie)Insert(str string) {
-// 	if len(str) == 0 {
-// 		return
-// 	}
-// 	strRunes := []rune(str)
-// 	if _, exists := t.roots[strRunes[0]]; !exists {
-// 		t.roots[strRunes[0]] = &node{
-// 			parent: nil,
-// 			children: make(map[rune]*node),
-// 			value: strRunes,
-// 			count: 1,
-// 			leaves: 1,
-// 		}
-// 		// fmt.Println("Doesn't exist at all")
-// 		// fmt.Printf("newNode:\n%s", t.roots[strRunes[0]])
-// 		t.UniqueWords++
-// 		return
-// 	}
-// 	nNode, good := t.roots[strRunes[0]] // cNode = CurrentNode
-// 	cNode := nNode
-// 	index := 0 // track parts covered by previous nodes
-// 	for good {
-// 		cNode = nNode
-// 		length := len(cNode.value)
-// 		if len(strRunes) < length {
-// 			length = len(strRunes)
-// 		}
-// 		i := 0
-// 		for ; i < length && i+index < len(strRunes); i++ {
-// 			if cNode.value[i] != strRunes[i + index] {
-// 				// do something drastic
-// 				// split nodes. current node into parent and child
-// 				// parent has child of new node of strRunes[i+index:] rest of string
-// 				newParent := &node{              // parent gets cNodes parent and the rest of the string up until
-// 					children: make(map[rune]*node),
-// 					parent: cNode.parent,
-// 					value: copyRunes(cNode.value[:i]),
-// 					leaves: cNode.leaves,
-// 				}
-// 				newNode := &node{
-// 					children: make(map[rune]*node),
-// 					parent: newParent,
-// 					value: copyRunes(strRunes[i + index:]),
-// 					count: 1,
-// 				}
-// 				if cNode.parent == nil {
-// 					t.roots[newParent.value[0]] = newParent
-// 				} else {
-// 					cNode.parent.children[newParent.value[0]] = newParent
-// 				}
-// 				newChild := cNode
-// 				newChild.parent = newParent
-// 				newChild.value = copyRunes(newChild.value[i:])
-// 				newParent.children[newChild.value[0]] = newChild
-// 				newParent.children[newNode.value[0]] = newNode
-// 				newNode.incrementLeafCount(1)
-// 				// fmt.Println("differ in the middle of the value")
-// 				// fmt.Printf("child:\n%s\nparent:\n%s\nnew:\n%s\ncNode:\n%s\n", newChild, newParent, newNode, cNode)
-// 				t.UniqueWords++
-// 				return
-// 			}
-// 		}
-// 		if len(strRunes) - index == len(cNode.value) { // they are the same if they made it this far and length is the same
-// 			// increment count cause the word already exists
-// 			// fmt.Println("duplicate string")
-// 			cNode.count += 1
-// 			return
-// 		} else if len(strRunes) - index < len(cNode.value) { // the str is a substring so we need to break up the node
-// 			// split node
-// 			newChild := &node{
-// 				children: cNode.children,
-// 				value: copyRunes(cNode.value[i:]),
-// 				leaves: 1,
-// 				count: cNode.count,
-// 			}
-// 			newParent := cNode
-// 			newParent.value = copyRunes(newParent.value[:i])
-// 			newParent.children = make(map[rune]*node)
-// 			newParent.children[newChild.value[0]] = newChild
-// 			newChild.parent = newParent
-// 			// fmt.Println("matching substring")
-// 			// fmt.Printf("newChild:\n%s\nnewParent:\n%s", newChild, newParent)
-// 			t.UniqueWords++
-// 			return
-// 		}
-// 		index += i
-// 		nNode, good = cNode.children[strRunes[index]]
-// 	}
-// 	// if we get here create new node
-// 	newNode := &node{
-// 		value: copyRunes(strRunes[index:]),
-// 		parent: cNode,
-// 		children: make(map[rune]*node),
-// 		count: 1,
-// 	}
-// 	cNode.children[newNode.value[0]] = newNode
-// 	t.UniqueWords++
-// 	newNode.incrementLeafCount(1)
-// 	// fmt.Println("matches string but is longer")
-// 	// fmt.Printf("cNode:\n%snewNode:\n%s\nnNode:\n%s", cNode, newNode, nNode)
-// }
 
 func copyRunes(one []rune) []rune {
 	tmp := make([]rune, len(one))
@@ -260,19 +186,20 @@ func (t *Trie)GetLeaves() int {
 
 func (t *Trie)getLeaves() (nodes []*node) {
 	for _, value := range t.roots {
-		nodes = append(nodes, getLeaves(value)...)
+		nodes = append(nodes, value.getLeaves()...)
 	}
 	return nodes
 }
 
 // DeleteWords will delete
-func (t *Trie)DeleteWords(num int) {
+func (t *Trie)DeleteWords(num int, replacement rune) {
 	for len(t.GetWords()) > num {
 		n := t.GetDeepestNode()
-		n.deleteDescendents('*')
+		n.deleteDescendents(replacement)
 	}
 }
 
+// GetWords gets the words
 func (t *Trie)GetWords() []string {
 	nads := t.getNodes()
 	strs := make([]string, 0)
@@ -284,6 +211,7 @@ func (t *Trie)GetWords() []string {
 	return strs
 }
 
+// GetDeepestNode gets the deepest node
 func (t *Trie)GetDeepestNode() *node {
 	if t == nil {
 		return nil
@@ -291,14 +219,12 @@ func (t *Trie)GetDeepestNode() *node {
 	iMax := 0
 	var nMax *node
 	for _, n := range t.roots {
-		max, nod := getDeepestNode(0, n)
+		max, nod := n.getDeepestNode(0)
 		if max > iMax {
 			iMax = max
 			nMax = nod
 		}
 	}
-	// fmt.Printf("iMax: %d\nnMax: %q\n", iMax, nMax)
-	// fmt.Println(getString(nMax))
 	return nMax
 }
 
@@ -329,7 +255,7 @@ func Print(m Trie) string {
 	}
 	str := ""
 	for _, v := range m.roots {
-		str = fmt.Sprintf("%s%s\n", str, printNodes(v))
+		str = fmt.Sprintf("%s%s\n", str, v.printNodes())
 	}
 	return str
 }
