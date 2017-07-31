@@ -31,6 +31,9 @@ func TestTrie(t *testing.T) {
 			t.Fatalf("'%s' should exist in the trie\nWords:\n%s", words[i], trie.GetWords())
 		}
 	}
+	trie.PrintNodes()
+	trie.PrintStrings()
+	//trie.PrintRoots()
 	if trie.Exists("testsi") {
 		t.Fatal("'testsi' shouldn't exist")
 	}
@@ -40,8 +43,10 @@ func TestTrie(t *testing.T) {
 	if trie.Exists("hello") {
 		t.Fatal("'hello' shouldn't exist")
 	}
-	trie.DeleteWords(5, '*')
+	trie.DeleteWords(4, '*')
 	if len(trie.GetWords()) > 5 {
 		t.Fatal("DeleteWords() failed. Number of Words:", len(trie.GetWords()))
 	}
+	trie.PrintNodes()
+	trie.PrintStrings()
 }

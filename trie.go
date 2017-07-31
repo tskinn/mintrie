@@ -90,6 +90,8 @@ func (t *Trie) Insert(str string) error {
 	if len(str) == 0 {
 		return nil
 	}
+	// fmt.Println(str)
+	// defer fmt.Println(t.Validate())
 	strRunes := []rune(str)
 	n, strRunesIndex, NodeValueIndex := t.find(str)
 	if n == nil { // no Node exists so create a new root
@@ -101,6 +103,7 @@ func (t *Trie) Insert(str string) error {
 			leaves:   1,
 		}
 		t.UniqueWords++
+		// fmt.Println("CREATE NEW")
 		return nil
 	} else if NodeValueIndex == len(n.value) && strRunesIndex == len(strRunes) {
 		n.count++ // it matches a Node already so just increase the count
@@ -114,6 +117,7 @@ func (t *Trie) Insert(str string) error {
 		n.children[newNode.value[0]] = newNode
 		t.UniqueWords++
 		newNode.incrementLeafCount(1)
+		// fmt.Println("ADD NEW NODE")
 	} else if strRunesIndex < len(strRunes) && NodeValueIndex < len(n.value) { // Sub. split Node into three
 		newParent := &Node{
 			children: make(map[rune]*Node),
@@ -139,10 +143,14 @@ func (t *Trie) Insert(str string) error {
 			t.roots[newParent.value[0]] = newParent
 		}
 		newDaughter.children = n.children
+		for _, child := range newDaughter.children {
+			child.Parent = newDaughter
+		}
 		newParent.children[newDaughter.value[0]] = newDaughter
 		newParent.children[newSon.value[0]] = newSon
 		newSon.incrementLeafCount(1)
 		t.UniqueWords++
+		// fmt.Println("SPLIT INTO THREE")
 	} else { // SubMatch. split current Node into two: Parent and child
 		newParent := &Node{
 			children: make(map[rune]*Node),
@@ -169,6 +177,7 @@ func (t *Trie) Insert(str string) error {
 		newParent.children[newChild.value[0]] = newChild
 		newParent.incrementLeafCount(1)
 		t.UniqueWords++
+		// fmt.Println("SPLIT INTO TWO")
 		return nil
 	}
 	return nil
