@@ -15,6 +15,8 @@ func TestTrie(t *testing.T) {
 		"teleport",
 		"telmarine",
 		"telephone",
+		"telephony",
+		"telephonista",
 		"telepathy",
 		"telepathic",
 		"testify",
@@ -38,8 +40,8 @@ func TestTrie(t *testing.T) {
 	if trie.Exists("hello") {
 		t.Fatal("'hello' shouldn't exist")
 	}
-	trie.DeleteWords(9, '*')
-	if len(trie.GetWords()) > 9 {
+	trie.DeleteWords(5, '*')
+	if len(trie.GetWords()) > 5 {
 		t.Fatal("DeleteWords() failed. Number of Words:", len(trie.GetWords()))
 	}
 }
