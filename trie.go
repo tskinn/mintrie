@@ -208,38 +208,10 @@ func (t *Trie) getNodes() (Nodes []*Node) {
 	return Nodes
 }
 
-// GetLeaves gets the number of leaves
-func (t *Trie) GetLeaves() int {
-	return len(t.getLeaves())
-}
-
-func (t *Trie) getLeaves() (Nodes []*Node) {
-	for _, value := range t.roots {
-		Nodes = append(Nodes, value.getLeaves()...)
-	}
-	return Nodes
-}
-
-func (t *Trie) DeleteOne() {
-	t.GetDeepestNode().DeleteDescendents('*')
-}
-
-// Tester does some crap
-func (t *Trie) Tester() {
-	curr := t.GetDeepestNode()
-	for curr != nil {
-		fmt.Println(curr)
-		curr = curr.Parent
-	}
-}
-
-// DeleteWords will delete
+// DeleteWords will delete words by chopping them off from the bottom of the tree.
+// Words will be deleted until the total words is less than or equal to num
 func (t *Trie) DeleteWords(num int, replacement rune) error {
-	count := 0
 	for len(t.GetWords()) > num {
-		if count == 10 {
-			return errors.New("You suck")
-		}
 		n := t.GetDeepestNode()
 		if n == nil { // no Nodes
 			return errors.New("Can't delete any more")
@@ -248,36 +220,31 @@ func (t *Trie) DeleteWords(num int, replacement rune) error {
 			delete(t.roots, n.value[0])
 		} else { // chop chop chop
 			n.Parent.DeleteDescendents(replacement)
-			// if 0 == n.Parent.DeleteDescendents(replacement) {
-			// 	fmt.Println()
-			// 	t.PrintRoots()
-			// 	t.PrintNodes()
-			// 	fmt.Println()
-			// }
 		}
-		count++
 	}
 	return nil
 }
 
-// GetWords gets the words
+// GetWords gets the words that have been added
 func (t *Trie) GetWords() []string {
-	nads := t.getNodes()
+	nodes := t.getNodes()
 	strs := make([]string, 0)
-	for i := range nads {
-		if nads[i].count != 0 {
-			strs = append(strs, nads[i].GetString())
+	for i := range nodes {
+		if nodes[i].count != 0 {
+			strs = append(strs, nodes[i].GetString())
 		}
 	}
 	return strs
 }
 
+// GetStrings gets all the strings in the trie by getting words of nodes that are leaves
+// delete me?
 func (t *Trie) GetStrings() []string {
-	nads := t.getNodes()
+	nodes := t.getNodes()
 	strs := make([]string, 0)
-	for i := range nads {
-		if len(nads[i].children) == 0 {
-			strs = append(strs, nads[i].GetStringIterable())
+	for i := range nodes {
+		if len(nodes[i].children) == 0 {
+			strs = append(strs, nodes[i].GetString())
 		}
 	}
 	return strs
@@ -300,38 +267,7 @@ func (t *Trie) GetDeepestNode() *Node {
 	return nMax
 }
 
-func (t *Trie) GetLongestString() string {
-	str, _ := t.getLongest()
-	return str
-}
-
-func (t *Trie) getLongest() (string, *Node) {
-	if t == nil {
-		return "", nil
-	}
-	max := 0
-	var no *Node
-	for _, root := range t.roots {
-		if tMax, tNode := getLongestString(0, root); tMax > max {
-			max = tMax
-			no = tNode
-		}
-	}
-	return no.GetString(), no
-}
-
-// Print is a crappy attemt to print the trie
-func Print(m Trie) string {
-	if len(m.roots) == 0 {
-		return ""
-	}
-	str := ""
-	for _, v := range m.roots {
-		str = fmt.Sprintf("%s%s\n", str, v.printNodes())
-	}
-	return str
-}
-
+// PrintStrings prints all the strings  in the trie
 func (t *Trie) PrintStrings() {
 	str := t.GetStrings()
 	for _, n := range str {
@@ -339,15 +275,10 @@ func (t *Trie) PrintStrings() {
 	}
 }
 
+// PrintNodes prints all the nodes in the trie
 func (t *Trie) PrintNodes() {
 	Nodes := t.getNodes()
 	for _, n := range Nodes {
 		fmt.Println(n)
-	}
-}
-
-func (t *Trie) PrintRoots() {
-	for k, n := range t.roots {
-		fmt.Printf("roots:\n\t%s\t->\t%s\n", string(k), string(n.value))
 	}
 }

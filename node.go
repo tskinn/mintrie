@@ -27,17 +27,7 @@ func (n *Node) GetString() string {
 	return string(n.Parent.GetString()) + string(n.value)
 }
 
-// GetStringIterable gest the string in interative fashion
-func (n *Node) GetStringIterable() string {
-	currentNode := n
-	result := ""
-	for currentNode != nil {
-		result = string(currentNode.value) + result
-		currentNode = currentNode.Parent
-	}
-	return result
-}
-
+// validateTrie checks to see if all the children that a parent points to point back to the parent
 func (n *Node) validateTrie() bool {
 	if n == nil {
 		return true
@@ -69,25 +59,6 @@ func (n *Node) decrementLeafCount(i int) {
 	n.Parent.decrementLeafCount(i)
 }
 
-func (n *Node) numString() int {
-	if n == nil {
-		return 0
-	}
-
-	if len(n.children) == 0 {
-		return 0
-	}
-	words := 0
-	if n.count > 0 {
-		words++
-	}
-
-	for _, v := range n.children {
-		words += v.numString()
-	}
-	return words
-}
-
 func (n *Node) String() string {
 	if n == nil {
 		return ""
@@ -102,31 +73,16 @@ func (n *Node) String() string {
 	return top + childs
 }
 
+// DeleteDescendents deletes all descendents of node n
 func (n *Node) DeleteDescendents(replacement rune) int {
 	if n == nil {
 		return 0
 	}
-	// if len(n.children) == 0 {
-	// 	fmt.Println("What the hell?")
-	// 	fmt.Println(n)
-	// 	fmt.Println(n.GetString())
-	// 	n.Parent.deleteDescendents('*')
-	// }
-	// Shouldn't have to do this but something weird is going on
-	// fmt.Println("This is n: ")
-	// fmt.Println(n)
-	// fmt.Println("These are ns children:")
-	// for _, i := range n.children {
-	// 	fmt.Println(i)
-	// 	i.Parent = nil
-	// }
 	leng := len(n.children)
 	n.value = append(copyRunes(n.value), replacement)
 	n.children = nil
 	n.leaves = 0
 	n.count = 1
-	// n.Parent.children[n.value[0]] = n
-	//fmt.Println(n)
 	return leng
 }
 
@@ -160,23 +116,6 @@ func (n *Node) getDeepestNode(depth int) (int, *Node) {
 		}
 	}
 	return depth, nMax
-}
-
-func getLongestString(length int, n *Node) (int, *Node) {
-	if n == nil {
-		return length, n
-	}
-	length += len(n.value)
-	max := length
-	no := n
-	for _, child := range n.children {
-		if tMax, tNode := getLongestString(length, child); tMax > max {
-			max = tMax
-			no = tNode
-		}
-	}
-
-	return max, no
 }
 
 func (n *Node) printNodes() string {
