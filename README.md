@@ -1,5 +1,5 @@
 # trie
-A trie data structure create for the sole purpose of easily reducing a large list of strings into a small list of strings.
+A trie data structure created for the sole purpose of easily reducing a large list of strings into a small list of strings.
 
 More specifically, this library was created with only one use case in mind. A certain CDN only allows a small 
 number of concurrent purge requests. If you have a thousands of purgeable files with frequent purges of various
