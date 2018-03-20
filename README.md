@@ -54,19 +54,19 @@ Then if you were to DeleteWords(6, '*') then you would end up with something lik
 
 ``` text
           ['t']
-            |
-         ['es']
-        /      \
-    ['s']      ['t']
-     /         /    \
+            |                      test
+         ['es']                    tess
+        /      \                   testament
+    ['s']      ['t']               tesseract
+     /         /    \              testi*
 ['eract'] ['ament']  ['i*']
 ``` 
 
 Or if you wer to run DeleteWords(3, '*') you would get something like this:
 
 ``` text
-          ['t']
-            |
+          ['t']                    tess*
+            |                      test*
          ['es']
         /      \
     ['s*']      ['t*']
