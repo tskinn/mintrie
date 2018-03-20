@@ -50,7 +50,7 @@ structure that resembles the following diagram would be made.
                  ['fy']  ['mony']
 ``` 
 
-Then if you were to DeleteWords(4, '*') then you would end up with this:
+Then if you were to DeleteWords(6, '*') then you would end up with something like this:
 
 ``` text
           ['t']
@@ -62,7 +62,7 @@ Then if you were to DeleteWords(4, '*') then you would end up with this:
 ['eract'] ['ament']  ['i*']
 ``` 
 
-Or if you wer to run DeleteWords(3, '*') you would get this:
+Or if you wer to run DeleteWords(3, '*') you would get something like this:
 
 ``` text
           ['t']
