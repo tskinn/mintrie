@@ -7,33 +7,33 @@ import (
 
 // getDescendents gets every node descendent of n
 // recursively collects all children nodes into one slice
-func (n *Node) getDescendents() []*Node {
-	nodes := []*Node{n}
-	if n == nil {
+func (node *Node) getDescendents() []*Node {
+	nodes := []*Node{node}
+	if node == nil {
 		return nodes
 	}
 
-	for _, v := range n.children {
-		nodes = append(nodes, v.getDescendents()...)
+	for _, childNode := range node.children {
+		nodes = append(nodes, childNode.getDescendents()...)
 	}
 	return nodes
 }
 
 // GetString gets the string in recursive fashion
-func (n *Node) GetString() string {
-	if n == nil {
+func (node *Node) GetString() string {
+	if node == nil {
 		return ""
 	}
-	return string(n.Parent.GetString()) + string(n.value)
+	return string(node.Parent.GetString()) + string(node.value)
 }
 
 // validateTrie checks to see if all the children that a parent points to point back to the parent
-func (n *Node) validateTrie() bool {
-	if n == nil {
+func (node *Node) validateTrie() bool {
+	if node == nil {
 		return true
 	}
-	for _, child := range n.children {
-		if child.Parent != n {
+	for _, child := range node.children {
+		if child.Parent != node {
 			return false
 		}
 		if !child.validateTrie() {
@@ -43,73 +43,74 @@ func (n *Node) validateTrie() bool {
 	return true
 }
 
-func (n *Node) incrementLeafCount(i int) {
-	if n == nil {
+func (node *Node) incrementLeafCount(i int) {
+	if node == nil {
 		return
 	}
-	n.leaves += i
-	n.Parent.incrementLeafCount(i)
+	node.leaves += i
+	node.Parent.incrementLeafCount(i)
 }
 
-func (n *Node) decrementLeafCount(i int) {
-	if n == nil {
+func (node *Node) decrementLeafCount(i int) {
+	if node == nil {
 		return
 	}
-	n.leaves -= i
-	n.Parent.decrementLeafCount(i)
+	node.leaves -= i
+	node.Parent.decrementLeafCount(i)
 }
 
-func (n *Node) String() string {
-	if n == nil {
+func (node *Node) String() string {
+	if node == nil {
 		return ""
 	}
 	// build string
-	ke := n.value[0]
-	childs := ""
-	for k, v := range n.children {
-		childs += "\t" + string(k) + "\t->\t" + string(v.value) + "\n"
+	firstRune := node.value[0]
+	children := ""
+	for childNodeFirstRune, childNode := range node.children {
+		children += "\t" + string(childNodeFirstRune) + "\t->\t" + string(childNode.value) + "\n"
 	}
-	top := string(ke) + "\t->\t(" + string(n.value) + ")\tcount: " + strconv.Itoa(n.count) + "\tleaves: " + strconv.Itoa(n.leaves) + "\n"
-	return top + childs
+	top := string(firstRune) + "\t->\t(" + string(node.value) + ")\tcount: " + strconv.Itoa(node.count) + "\tleaves: " + strconv.Itoa(node.leaves) + "\n"
+	return top + children
 }
 
 // DeleteDescendents deletes all descendents of node n
-func (n *Node) DeleteDescendents(replacement rune) int {
-	if n == nil {
+// and adds 'replacement' to the end of nodes value
+func (node *Node) DeleteDescendents(replacement rune) int {
+	if node == nil {
 		return 0
 	}
-	leng := len(n.children)
-	n.value = append(copyRunes(n.value), replacement)
-	n.children = nil
-	n.leaves = 0
-	n.count = 1
-	return leng
+	numberOfChildren := len(node.children)
+	node.value = append(copyRunes(node.value), replacement)
+	node.children = nil
+	node.leaves = 0
+	node.count = 1
+	return numberOfChildren
 }
 
-func (n *Node) getLeaves() []*Node {
+func (node *Node) getLeaves() []*Node {
 	nodes := make([]*Node, 0)
-	if n == nil {
+	if node == nil {
 		return nodes
 	}
-	if n.count != 0 {
-		nodes = append(nodes, n)
+	if node.count != 0 {
+		nodes = append(nodes, node)
 	}
 
-	for _, v := range n.children {
-		nodes = append(nodes, v.getDescendents()...)
+	for _, child := range node.children {
+		nodes = append(nodes, child.getDescendents()...)
 	}
 	return nodes
 }
 
 // getDeepestNode returns the depth of the node and the node itself
-func (n *Node) getDeepestNode(depth int) (int, *Node) {
-	if n == nil || len(n.children) == 0 {
-		return depth, n
+func (node *Node) getDeepestNode(depth int) (int, *Node) {
+	if node == nil || len(node.children) == 0 {
+		return depth, node
 	}
-	nMax := n
+	nMax := node
 	d := depth
-	for _, n := range n.children {
-		max, nod := n.getDeepestNode(d + 1)
+	for _, child := range node.children {
+		max, nod := child.getDeepestNode(d + 1)
 		if max > depth {
 			depth = max
 			nMax = nod
@@ -118,13 +119,13 @@ func (n *Node) getDeepestNode(depth int) (int, *Node) {
 	return depth, nMax
 }
 
-func (n *Node) printNodes() string {
-	if n == nil {
+func (node *Node) printNodes() string {
+	if node == nil {
 		return ""
 	}
-	str := fmt.Sprintf("%s : %d : %d", string(n.value), n.count, n.leaves)
-	for _, v := range n.children {
-		str = fmt.Sprintf("%s\n%s", str, v.printNodes())
+	str := fmt.Sprintf("%s : %d : %d", string(node.value), node.count, node.leaves)
+	for _, child := range node.children {
+		str = fmt.Sprintf("%s\n%s", str, child.printNodes())
 	}
 	return str
 }

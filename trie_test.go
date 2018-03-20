@@ -30,8 +30,17 @@ func getSubset(paths []string, length int) []string {
 		length = len(paths)
 	}
 	subset := make([]string, length)
+	usedIndex := make(map[int]int)
 	for i := 0; i < length; i++ {
-		subset[i] = paths[rand.Intn(length)]
+		var randIndex int
+		for {
+			randIndex = rand.Intn(length)
+			if _, exists := usedIndex[randIndex]; !exists {
+				usedIndex[randIndex] = 1
+				break
+			}
+		}
+		subset[i] = paths[randIndex]
 	}
 	return subset
 }
@@ -58,7 +67,7 @@ func TestTrie(test *testing.T) {
 	}
 	rand.Seed(int64(seed))
 	set := getFile("./testset.txt")
-	subset := getSubset(set, 500)
+	subset := getSubset(set, 2000)
 	t := NewTrie()
 	for i := range subset {
 		t.Insert(subset[i])
@@ -72,8 +81,7 @@ func TestTrie(test *testing.T) {
 	if t.Exists("hello") {
 		test.Fatal("'hello' shouldn't exist")
 	}
-	// t.PrintNodes()
-	err = t.DeleteWords(30, '*')
+	err = t.DeleteWords(50, '*')
 	if err != nil {
 		test.Fatal(err)
 	}
@@ -90,7 +98,6 @@ func TestTrie(test *testing.T) {
 				setCount++
 			}
 		}
-
 		subsetCovered := 0
 		for j := range subset {
 			if matches(subset[j], words[i]) {
@@ -102,13 +109,81 @@ func TestTrie(test *testing.T) {
 		numberCoveredInSubset[i] = subsetCovered
 	}
 
-	fmt.Println("words : numberConveredInSubset : numberCoveredInSet")
-	for i := range words {
-		fmt.Printf("%s : %d : %d\n", words[i], numberCoveredInSubset[i], numberCoveredInSet[i])
+	nummatches := 0
+	for _, word := range set {
+		for _, subWord := range subset {
+			if matches(subWord, word) {
+				nummatches++
+			}
+		}
 	}
+
+	// fmt.Println("words : numberConveredInSubset : numberCoveredInSet")
+	// for i := range words {
+	// 	fmt.Printf("%s : %d : %d\n", words[i], numberCoveredInSubset[i], numberCoveredInSet[i])
+	// }
 	fmt.Println("Length of Subset:", len(subset), "Length of Set:", len(set))
 	fmt.Println("Covered in Subset:", subsetCount, "Covered in Set:", setCount)
 	if len(subset) != subsetCount {
 		test.Fatal("not all words covered")
+	}
+}
+
+func TestTrieSubMatchCase(test *testing.T) {
+	t := NewTrie()
+	if err := t.Insert("hello there"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hello ther"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if !t.Exists("hello ther") {
+		test.Fatalf("expected '%s' to exist", "hell")
+	}
+	if err := t.Insert("hello the"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hello th"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hello t"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hello "); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hello"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("hell"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert(""); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+}
+
+func TestTrieValidate(test *testing.T) {
+	t := NewTrie()
+	if err := t.Insert("test"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("testing"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("testify"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("testimony"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("tes"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if err := t.Insert("tess"); err != nil {
+		test.Fatalf("expected to be able to insert. got error: %s", err.Error())
+	}
+	if !t.Validate() {
+		test.Fatalf("expected trie to be valid")
 	}
 }

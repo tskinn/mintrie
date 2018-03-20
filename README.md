@@ -21,3 +21,53 @@ some*
 
 This library makes it easy to generate a handful of purge strings from large lists of resources to be purged. Try it out by
 running the test file or experimenting on the list of files given in `testset.txt` in this repo.
+
+
+## Example
+
+``` text
+test
+testify
+testament
+testimony
+tesseract
+tess
+```
+
+If one were to insert every string from the list above into a `trie` a
+structure that resembles the following diagram would be made.
+
+
+``` text
+          ['t']
+            |
+         ['es']
+        /      \
+    ['s']      ['t']
+     /         /    \
+['eract'] ['ament']  ['i']
+                     /   \
+                 ['fy']  ['mony']
+``` 
+
+Then if you were to DeleteWords(4, '*') then you would end up with this:
+
+``` text
+          ['t']
+            |
+         ['es']
+        /      \
+    ['s']      ['t']
+     /         /    \
+['eract'] ['ament']  ['i*']
+``` 
+
+Or if you wer to run DeleteWords(3, '*') you would get this:
+
+``` text
+          ['t']
+            |
+         ['es']
+        /      \
+    ['s*']      ['t*']
+``` 
